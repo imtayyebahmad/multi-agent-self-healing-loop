@@ -1,4 +1,4 @@
-# multi-agent-self-healing-loop
+![Workflow Architecture Diagram](multi-agent-workflow.png)
 # Multi-Agent Qualification Engine with Self-Correction Loop
 
 ## 📌 Project Overview
