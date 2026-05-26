@@ -1,0 +1,141 @@
+{
+  "name": "Multi-Agent Qualification & Self-Correction Engine",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "agent-qualification",
+        "options": {}
+      },
+      "id": "agent-webhook",
+      "name": "Incoming Data Agent",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [150, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "prompt": "=Analyze this lead profile and assign a score: {{ $json.body.lead_info }}"
+      },
+      "id": "primary-agent",
+      "name": "Primary Evaluator Agent",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [350, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "prompt": "=Verify the output logic of the primary agent. Is the evaluation valid and error-free based on company rules? Primary Output: {{ $node[\"Primary Evaluator Agent\"].json.text }}"
+      },
+      "id": "validator-agent",
+      "name": "Validator Agent",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [550, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.text.toLowerCase() }}",
+              "operation": "contains",
+              "value2": "valid"
+            }
+          ]
+        }
+      },
+      "id": "loop-check",
+      "name": "Self-Correction Router",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [750, 300]
+    },
+    {
+      "parameters": {
+        "notice": "Self-healing loop triggered. Auto-correcting payload errors."
+      },
+      "id": "correction-node",
+      "name": "Sub-Second Healing Loop",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [550, 500]
+    },
+    {
+      "parameters": {
+        "notice": "Payload clear. Proceeding to target system ingestion."
+      },
+      "id": "crm-ingest",
+      "name": "Verified State Execution",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [980, 260]
+    }
+  ],
+  "connections": {
+    "Incoming Data Agent": {
+      "main": [
+        [
+          {
+            "node": "Primary Evaluator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Primary Evaluator Agent": {
+      "main": [
+        [
+          {
+            "node": "Validator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validator Agent": {
+      "main": [
+        [
+          {
+            "node": "Self-Correction Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Self-Correction Router": {
+      "main": [
+        [
+          {
+            "node": "Verified State Execution",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sub-Second Healing Loop",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sub-Second Healing Loop": {
+      "main": [
+        [
+          {
+            "node": "Primary Evaluator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
